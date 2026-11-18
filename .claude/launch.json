@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "border-generator", "runtimeExecutable": "dotnet", "runtimeArgs": ["run", "--project", "src/Borders.Web"], "port": 5174 }
+  ]
+}

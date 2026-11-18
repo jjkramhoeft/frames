@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Borders.Cli/Borders.Cli.csproj" />
+    <Project Path="src/Borders.Samples/Borders.Samples.csproj" />
+    <Project Path="src/Borders.Web/Borders.Web.csproj" />
+    <Project Path="src/Borders/Borders.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Borders.Tests/Borders.Tests.csproj" />
+  </Folder>
+</Solution>

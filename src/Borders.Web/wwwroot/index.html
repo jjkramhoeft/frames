@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Border Generator</title>
+<style>
+  :root {
+    --bg: #f4f1ea; --panel: #fbf9f4; --line: #ddd6c6; --text: #26221b; --muted: #7a7263;
+    --accent: #26221b; --accent-text: #fbf9f4; --focus: #a8642a;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, "Segoe UI", sans-serif; display: grid; grid-template-columns: 320px 1fr; }
+  aside { background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; padding: 20px 18px 28px; }
+  h1 { font: 600 17px/1.2 Georgia, "Times New Roman", serif; letter-spacing: .01em; margin: 0 0 2px; }
+  .sub { color: var(--muted); font-size: 12.5px; margin: 0 0 18px; }
+  fieldset { border: 0; padding: 0; margin: 0 0 18px; }
+  legend { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 0; margin-bottom: 7px; }
+  .styles { display: grid; gap: 3px; }
+  .styles label { display: flex; align-items: center; gap: 8px; padding: 6px 9px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; }
+  .styles label:hover { background: #f0ebdf; }
+  .styles input { position: absolute; opacity: 0; pointer-events: none; }
+  .styles label:has(input:checked) { background: var(--accent); color: var(--accent-text); }
+  .styles label:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row + .row { margin-top: 8px; }
+  input[type=number], input[type=text] { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: inherit; font: inherit; min-width: 0; }
+  input:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+  button { font: inherit; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: #fff; color: inherit; cursor: pointer; white-space: nowrap; }
+  button:hover { border-color: #b9b09c; }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .chips button[aria-pressed=true] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .times { color: var(--muted); }
+  .swatch { display: flex; align-items: center; gap: 6px; flex: 1; font-size: 12.5px; color: var(--muted); }
+  input[type=color] { width: 30px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 5px; background: #fff; cursor: pointer; }
+  input[type=range] { flex: 1; accent-color: var(--accent); }
+  .hint { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+  main { display: grid; grid-template-rows: auto 1fr; min-width: 0; min-height: 0; }
+  header { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  #info { margin-right: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+  #info b { color: var(--text); font-weight: 600; }
+  #stage { min-height: 0; display: grid; place-items: center; padding: 28px; overflow: auto; }
+  #stage.checker { background: repeating-conic-gradient(#e9e4d8 0% 25%, #f8f5ee 0% 50%) 0 0 / 22px 22px; }
+  #stage.light { background: #ffffff; }
+  #stage.dark { background: #1d1b18; }
+  #stage.photo { background: linear-gradient(135deg, #c98b5e, #6f8f8a 55%, #33485c); }
+  [hidden] { display: none !important; }
+  canvas { max-width: 100%; max-height: 100%; box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 8px 30px rgba(0,0,0,.12); }
+  #error { color: #a3261b; padding: 0 18px; }
+  @media (max-width: 760px) { body { grid-template-columns: 1fr; grid-template-rows: auto 70vh; } aside { border-right: 0; border-bottom: 1px solid var(--line); } }
+</style>
+</head>
+<body>
+<aside>
+  <h1>Decorative Border Generator</h1>
+  <p class="sub">Seeded vintage frames, rendered as transparent PNG.</p>
+
+  <fieldset>
+    <legend>Style</legend>
+    <div class="styles" id="styles"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Size (pixels)</legend>
+    <div class="chips" id="presets">
+      <button type="button" data-w="512" data-h="512">512 × 512</button>
+      <button type="button" data-w="800" data-h="600">800 × 600</button>
+      <button type="button" data-w="540" data-h="960">540 × 960</button>
+    </div>
+    <div class="row">
+      <input type="number" id="width" min="96" max="4096" value="512" aria-label="Width">
+      <span class="times">×</span>
+      <input type="number" id="height" min="96" max="4096" value="512" aria-label="Height">
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Seed</legend>
+    <div class="row">
+      <input type="text" id="seed" value="1" aria-label="Seed" spellcheck="false">
+      <button type="button" id="shuffle">Shuffle</button>
+    </div>
+    <p class="hint">Same style, size and seed always give the same frame.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Border thickness</legend>
+    <div class="row">
+      <input type="range" id="thickness" min="0.08" max="0.2" step="0.01" value="0.13" aria-label="Border thickness">
+      <span id="thicknessValue" class="times">13%</span>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Output</legend>
+    <div class="chips" id="modes">
+      <button type="button" data-mode="bw" aria-pressed="true">Black &amp; white</button>
+      <button type="button" data-mode="ink">Ink only</button>
+      <button type="button" data-mode="white">White</button>
+      <button type="button" data-mode="white-grey">White + grey</button>
+    </div>
+    <div class="row" id="greyRow" hidden>
+      <span class="times">Fill grey</span>
+      <input type="range" id="grey" min="0" max="230" step="1" value="102" aria-label="Fill grey level">
+      <span id="greyValue" class="times">102</span>
+    </div>
+    <p class="hint" id="modeHint"></p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Tint preview</legend>
+    <div class="row">
+      <label class="swatch"><input type="color" id="ink" value="#000000"> <span id="inkLabel">Ink</span></label>
+      <label class="swatch" id="paperSwatch"><input type="color" id="paper" value="#ffffff"> Paper</label>
+      <button type="button" id="resetTint">Reset</button>
+    </div>
+    <div class="chips" id="backdrops" style="margin-top:10px">
+      <button type="button" data-bg="checker" aria-pressed="true">Checker</button>
+      <button type="button" data-bg="light">White</button>
+      <button type="button" data-bg="dark">Dark</button>
+      <button type="button" data-bg="photo">Colour</button>
+    </div>
+    <p class="hint">Tinting here is only a preview. “Download PNG” always saves the untinted original.</p>
+  </fieldset>
+</aside>
+
+<main>
+  <header>
+    <span id="info"></span>
+    <button type="button" id="dlTinted">Download tinted PNG</button>
+    <button type="button" id="dlSvg">Download SVG</button>
+    <button type="button" id="dlPng" class="primary">Download PNG</button>
+  </header>
+  <div id="stage" class="checker">
+    <div id="error" role="alert"></div>
+    <canvas id="canvas" width="512" height="512"></canvas>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const state = { style: null, width: 512, height: 512, seed: '1', mode: 'bw', thickness: 0.13, grey: 102 };
+let source = null; // ImageData of the untinted render
+let ticket = 0;
+
+const query = (extra = {}) => new URLSearchParams({ ...state, ...extra }).toString();
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+
+function paint() {
+  if (!source) return;
+  const canvas = $('canvas'), ctx = canvas.getContext('2d');
+  canvas.width = source.width;
+  canvas.height = source.height;
+  const ink = hex($('ink').value), paper = hex($('paper').value);
+  const out = new ImageData(new Uint8ClampedArray(source.data), source.width, source.height);
+  const d = out.data;
+  const multiply = state.mode.startsWith('white'); // white output: tint = pixel x colour
+  for (let i = 0; i < d.length; i += 4) {
+    if (!d[i + 3]) continue;
+    const l = d[i] / 255;
+    if (multiply) {
+      d[i] = ink[0] * l; d[i + 1] = ink[1] * l; d[i + 2] = ink[2] * l;
+    } else {
+      d[i] = ink[0] + (paper[0] - ink[0]) * l;
+      d[i + 1] = ink[1] + (paper[1] - ink[1]) * l;
+      d[i + 2] = ink[2] + (paper[2] - ink[2]) * l;
+    }
+  }
+  ctx.putImageData(out, 0, 0);
+}
+
+async function refresh() {
+  const mine = ++ticket;
+  $('error').textContent = '';
+  const t0 = performance.now();
+  try {
+    const res = await fetch('/api/frame.png?' + query());
+    if (!res.ok) throw new Error(await res.text());
+    const bmp = await createImageBitmap(await res.blob(), { premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
+    if (mine !== ticket) return;
+    const off = new OffscreenCanvas(bmp.width, bmp.height);
+    const ctx = off.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(bmp, 0, 0);
+    source = ctx.getImageData(0, 0, bmp.width, bmp.height);
+    paint();
+    const name = document.querySelector('#styles input:checked')?.dataset.name || '';
+    $('info').innerHTML = `<b>${name}</b> · ${state.width} × ${state.height} px · seed ${escapeHtml(state.seed)} · ${Math.round(performance.now() - t0)} ms`;
+  } catch (err) {
+    if (mine === ticket) $('error').textContent = err.message;
+  }
+}
+const escapeHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+let timer;
+const schedule = () => { clearTimeout(timer); timer = setTimeout(refresh, 120); };
+
+function syncPresets() {
+  for (const b of $('presets').children) b.setAttribute('aria-pressed', String(+b.dataset.w === state.width && +b.dataset.h === state.height));
+}
+function setSize(w, h) {
+  state.width = w; state.height = h;
+  $('width').value = w; $('height').value = h;
+  syncPresets(); schedule();
+}
+
+$('presets').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setSize(+b.dataset.w, +b.dataset.h); });
+for (const id of ['width', 'height']) $(id).addEventListener('input', () => {
+  const v = Math.round(+$(id).value);
+  if (v >= 96 && v <= 4096) { state[id] = v; syncPresets(); schedule(); }
+});
+$('seed').addEventListener('input', () => { state.seed = $('seed').value || '1'; schedule(); });
+$('shuffle').addEventListener('click', () => { state.seed = String(Math.floor(Math.random() * 100000)); $('seed').value = state.seed; refresh(); });
+$('thickness').addEventListener('input', () => { state.thickness = +$('thickness').value; $('thicknessValue').textContent = Math.round(state.thickness * 100) + '%'; schedule(); });
+
+const MODE_HINTS = {
+  bw: 'Black line art with white fills inside ornaments. The background and the middle stay transparent.',
+  ink: 'Black only. White areas become transparent, so the alpha channel carries the whole drawing.',
+  white: 'White only, on transparent. Made for tinting afterwards: multiply or colour-overlay the PNG and the frame takes that colour.',
+  'white-grey': 'White line art with the fills inside ornaments kept opaque in grey. A multiply tint gives the tint colour for the lines and a darker shade of it for the fills.',
+};
+function setBackdrop(bg) {
+  for (const o of $('backdrops').children) o.setAttribute('aria-pressed', String(o.dataset.bg === bg));
+  $('stage').className = bg;
+}
+function setMode(m) {
+  const wasWhite = state.mode.startsWith('white'), isWhite = m.startsWith('white');
+  $('greyRow').hidden = m !== 'white-grey';
+  state.mode = m;
+  for (const b of $('modes').children) b.setAttribute('aria-pressed', String(b.dataset.mode === m));
+  $('modeHint').textContent = MODE_HINTS[m];
+  // White output is tinted by multiplying, so the picker starts at white (= untinted) on a dark backdrop.
+  $('inkLabel').textContent = isWhite ? 'Tint' : 'Ink';
+  $('paperSwatch').style.visibility = isWhite ? 'hidden' : 'visible';
+  if (isWhite !== wasWhite) {
+    $('ink').value = isWhite ? '#ffffff' : '#000000';
+    const bg = $('stage').className;
+    if (isWhite && (bg === 'checker' || bg === 'light')) setBackdrop('dark');
+    if (!isWhite && bg === 'dark') setBackdrop('checker');
+  }
+}
+$('modes').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { setMode(b.dataset.mode); refresh(); } });
+$('backdrops').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setBackdrop(b.dataset.bg); });
+$('grey').addEventListener('input', () => { state.grey = +$('grey').value; $('greyValue').textContent = state.grey; schedule(); });
+$('ink').addEventListener('input', paint);
+$('paper').addEventListener('input', paint);
+$('resetTint').addEventListener('click', () => { $('ink').value = state.mode.startsWith('white') ? '#ffffff' : '#000000'; $('paper').value = '#ffffff'; paint(); });
+
+$('dlPng').addEventListener('click', () => { location.href = '/api/frame.png?' + query({ download: 1 }); });
+$('dlSvg').addEventListener('click', () => { location.href = '/api/frame.svg?' + query({ download: 1 }); });
+$('dlTinted').addEventListener('click', () => {
+  $('canvas').toBlob((blob) => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${state.style}_${state.width}x${state.height}_seed${state.seed.replace(/[^\w.-]+/g, '_')}${state.mode === 'bw' ? '' : '_' + state.mode}_tinted.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+});
+
+(async function init() {
+  const { styles } = await (await fetch('/api/styles')).json();
+  state.style = styles[0].id;
+  $('styles').innerHTML = styles.map((s, i) =>
+    `<label><input type="radio" name="style" value="${s.id}" data-name="${escapeHtml(s.name)}"${i ? '' : ' checked'}>${escapeHtml(s.name)}</label>`).join('');
+  $('styles').addEventListener('change', (e) => { state.style = e.target.value; refresh(); });
+  setMode('bw');
+  syncPresets();
+  refresh();
+})();
+</script>
+</body>
+</html>
